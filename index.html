@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>찬일 피하기 게임</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      background-color: #d0f4f7;
+    }
+    h1 {
+      margin: 0;
+      padding: 10px;
+      font-size: 24px;
+      color: #333;
+    }
+    p {
+      margin: 0;
+      padding: 10px;
+      font-size: 16px;
+      color: #555;
+    }
+    canvas {
+      display: block;
+      background: #a0d8ef;
+      border: 2px solid #333;
+    }
+    #scoreboard {
+      margin-top: 10px;
+      font-size: 18px;
+      color: #222;
+    }
+    #restart {
+      display: none;
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #ff6f61;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #restart:hover {
+      background-color: #ff3f31;
+    }
+  </style>
+</head>
+<body>
+  <h1>찬일 피하기 게임</h1>
+  <p>찬일을 피하면 점수가 올라가!</p>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <div id="scoreboard">
+    <div>Score: <span id="score">0</span></div>
+    <div>High Score: <span id="highScore">0</span></div>
+  </div>
+  <button id="restart">다시 플레이</button>
+
+  <audio id="gameMusic" autoplay loop>
+    <source src="your_music_file.mp3" type="audio/mp3">
+    Your browser does not support the audio element.
+  </audio>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const restartButton = document.getElementById("restart");
+    const scoreDisplay = document.getElementById("score");
+    const highScoreDisplay = document.getElementById("highScore");
+    const gameMusic = document.getElementById("gameMusic");
+
+    const player = {
+      x: canvas.width / 2 - 25,
+      y: canvas.height - 70,
+      width: 50,
+      height: 50,
+      speed: 10,
+      isDragging: false,
+    };
+
+    const poopArray = [];
+    const poopSize = 40;
+    let score = 0;
+    let highScore = 0;
+    let gameOver = false;
+
+    const playerImg = new Image();
+    playerImg.src = "chanil.png";
+
+    const poopImg = new Image();
+    poopImg.src = "poop.jpg";
+
+    function createPoop() {
+      const numPoops = Math.floor(Math.random() * 3) + 1;
+      for (let i = 0; i < numPoops; i++) {
+        const x = Math.random() * (canvas.width - poopSize);
+        poopArray.push({ x, y: -poopSize });
+      }
+    }
+
+    function drawPlayer() {
+      ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    }
+
+    function drawPoop() {
+      for (const poop of poopArray) {
+        ctx.drawImage(poopImg, poop.x, poop.y, poopSize, poopSize);
+      }
+    }
+
+    function updatePoop() {
+      for (const poop of poopArray) {
+        poop.y += 5;
+        if (
+          poop.y + poopSize > player.y &&
+          poop.x + poopSize > player.x &&
+          poop.x < player.x + player.width
+        ) {
+          gameOver = true;
+          gameMusic.pause();  // 음악을 멈춤
+        }
+      }
+      if (poopArray.length && poopArray[0].y > canvas.height) {
+        poopArray.shift();
+        score += 10;
+        scoreDisplay.innerText = score;
+      }
+    }
+
+    function movePlayer(event) {
+      if (event.key === "ArrowLeft" && player.x > 0) {
+        player.x -= player.speed;
+      } else if (
+        event.key === "ArrowRight" &&
+        player.x < canvas.width - player.width
+      ) {
+        player.x += player.speed;
+      }
+    }
+
+    // 드래그 시작
+    function startDrag(event) {
+      const x = event.touches ? event.touches[0].clientX : event.clientX; // 터치와 마우스 구분
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = x - rect.left;
+      const mouseY = (event.touches ? event.touches[0].clientY : event.clientY) - rect.top;
+
+      // 플레이어 클릭 여부 확인
+      if (
+        mouseX >= player.x &&
+        mouseX <= player.x + player.width &&
+        mouseY >= player.y &&
+        mouseY <= player.y + player.height
+      ) {
+        player.isDragging = true;
+      }
+    }
+
+    // 드래그 중
+    function dragPlayer(event) {
+      if (player.isDragging) {
+        const x = event.touches ? event.touches[0].clientX : event.clientX; // 터치와 마우스 구분
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = x - rect.left;
+
+        // 마우스 X 좌표에 따라 플레이어 위치 이동
+        player.x = mouseX - player.width / 2;
+
+        // 경계 체크
+        if (player.x < 0) player.x = 0;
+        if (player.x > canvas.width - player.width)
+          player.x = canvas.width - player.width;
+      }
+    }
+
+    // 드래그 종료
+    function endDrag() {
+      player.isDragging = false;
+    }
+
+    function showGameOver() {
+      ctx.fillStyle = "red";
+      ctx.font = "30px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("찬일팸의 입단!", canvas.width / 2, canvas.height / 2 - 20);
+      if (score > highScore) {
+        highScore = score;
+        highScoreDisplay.innerText = highScore;
+      }
+      restartButton.style.display = "block";
+    }
+
+    function resetGame() {
+      score = 0;
+      poopArray.length = 0;
+      gameOver = false;
+      restartButton.style.display = "none";
+      scoreDisplay.innerText = score;
+      gameMusic.play();  // 게임이 재시작될 때 음악을 틀기
+      loop();
+    }
+
+    function loop() {
+      if (gameOver) {
+        showGameOver();
+        return;
+      }
+
+      if (gameMusic.paused) {
+        gameMusic.play();  // 게임 중일 때만 음악 실행
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPlayer();
+      drawPoop();
+      updatePoop();
+      requestAnimationFrame(loop);
+    }
+
+    document.addEventListener("keydown", movePlayer);
+    canvas.addEventListener("mousedown", startDrag);
+    canvas.addEventListener("mousemove", dragPlayer);
+    canvas.addEventListener("mouseup", endDrag);
+    canvas.addEventListener("mouseleave", endDrag);
+
+    // 터치 이벤트 추가
+    canvas.addEventListener("touchstart", startDrag);
+    canvas.addEventListener("touchmove", dragPlayer);
+    canvas.addEventListener("touchend", endDrag);
+
+    restartButton.addEventListener("click", resetGame);
+    setInterval(createPoop, 1000);
+    loop();
+  </script>
+</body>
+</html>
