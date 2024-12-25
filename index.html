@@ -1,242 +1,277 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>찬일 피하기 게임</title>
-  <style>
-    body {
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-family: Arial, sans-serif;
-      background-color: #d0f4f7;
-    }
-    h1 {
-      margin: 0;
-      padding: 10px;
-      font-size: 24px;
-      color: #333;
-    }
-    p {
-      margin: 0;
-      padding: 10px;
-      font-size: 16px;
-      color: #555;
-    }
-    canvas {
-      display: block;
-      background: #a0d8ef;
-      border: 2px solid #333;
-    }
-    #scoreboard {
-      margin-top: 10px;
-      font-size: 18px;
-      color: #222;
-    }
-    #restart {
-      display: none;
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #ff6f61;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #restart:hover {
-      background-color: #ff3f31;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>찬일 점프 게임</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-color: #87CEEB;
+            height: 100vh;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+        #top-section {
+            width: 400px;
+            height: 240px;  
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f4f4f4;
+            border-bottom: 1px solid #000;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: blue;
+            padding: 5px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        #top-section h1 {
+            font-size: 20px;
+            margin: 0;
+            padding: 0;
+        }
+        #top-section p {
+            font-size: 16px;
+            margin: 0;
+            padding: 2px 0;
+        }
+        #bottom-section {
+            width: 400px; /* 아래쪽 영역을 넓히는 부분 */
+            height: 240px; /* 아래쪽 영역의 높이를 240px로 확장 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f4f4f4;
+            border-top: 1px solid #000;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: black;
+            padding: 5px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        #bottom-section p {
+            font-size: 16px;
+            margin: 0;
+            padding: 3px 0;
+        }
+        #bottom-section p:nth-child(1) {
+            color: blue;
+        }
+        #bottom-section p:nth-child(2) {
+            color: red;
+        }
+        #game-screen {
+            position: relative;
+            width: 400px;
+            height: 480px; /* 게임 화면 높이를 줄여서 플레이어가 땅 바로 위에 위치하게 수정 */
+            background: #fff;
+            border: 1px solid #000;
+        }
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-family: Arial, sans-serif;
+            color: red;
+        }
+        #game-over button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-  <h1>찬일 피하기 게임</h1>
-  <p>찬일을 피하면 점수가 올라가!</p>
-  <canvas id="gameCanvas" width="400" height="600"></canvas>
-  <div id="scoreboard">
-    <div>Score: <span id="score">0</span></div>
-    <div>High Score: <span id="highScore">0</span></div>
-  </div>
-  <button id="restart">다시 플레이</button>
+    <div id="game-container">
+        <!-- 위쪽 영역 -->
+        <div id="top-section">
+            <h1>찬일 피하기</h1>
+            <p id="score">Score: 0</p>
+            <p id="high-score">High Score: 0</p>
+        </div>
 
-  <audio id="gameMusic" autoplay loop>
-    <source src="your_music_file.mp3" type="audio/mp3">
-    Your browser does not support the audio element.
-  </audio>
+        <!-- 게임 화면 -->
+        <div id="game-screen">
+            <canvas id="gameCanvas" width="400" height="480"></canvas> <!-- 높이를 480으로 설정 -->
+            <div id="game-over">
+                <h1>찬일팸 입단!</h1>
+                <button onclick="restartGame()">다시 플레이</button>
+            </div>
+        </div>
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    const restartButton = document.getElementById("restart");
-    const scoreDisplay = document.getElementById("score");
-    const highScoreDisplay = document.getElementById("highScore");
-    const gameMusic = document.getElementById("gameMusic");
+        <!-- 아래쪽 영역 -->
+        <div id="bottom-section">
+            <p>점프를 해서 찬일이를 피해봐!</p>
+            <p>더블점프도 가능!</p>
+            <p id="timer">시간: 00:00</p>
+            <p id="lives">목숨: 4</p>
+        </div>
+    </div>
 
-    const player = {
-      x: canvas.width / 2 - 25,
-      y: canvas.height - 70,
-      width: 50,
-      height: 50,
-      speed: 10,
-      isDragging: false,
-    };
+    <audio id="rand1" src="rand1.mp3"></audio>
+    <audio id="rand2" src="rand2.mp3"></audio>
+    <audio id="aa" src="aa.mp3"></audio>
+    <audio id="bb" src="bb.mp3"></audio>
 
-    const poopArray = [];
-    const poopSize = 40;
-    let score = 0;
-    let highScore = 0;
-    let gameOver = false;
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const gameOverScreen = document.getElementById("game-over");
 
-    const playerImg = new Image();
-    playerImg.src = "chanil.png";
+        let player = { x: 160, y: 440, width: 30, height: 30, vy: 0, jumpCount: 0, image: "player.jpg" };
+        let gravity = 0.8;
+        let isGameOver = false;
+        let obstacles = [];
+        let score = 0;
+        let highScore = 0;
+        let lives = 4;
+        let timer = { minutes: 0, seconds: 0 };
+        let obstacleSpawnInterval;
 
-    const poopImg = new Image();
-    poopImg.src = "poop.jpg";
+        const rand1Audio = document.getElementById("rand1");
+        const rand2Audio = document.getElementById("rand2");
+        const aaAudio = document.getElementById("aa");
+        const bbAudio = document.getElementById("bb");
 
-    function createPoop() {
-      const numPoops = Math.floor(Math.random() * 3) + 1;
-      for (let i = 0; i < numPoops; i++) {
-        const x = Math.random() * (canvas.width - poopSize);
-        poopArray.push({ x, y: -poopSize });
-      }
-    }
-
-    function drawPlayer() {
-      ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
-    }
-
-    function drawPoop() {
-      for (const poop of poopArray) {
-        ctx.drawImage(poopImg, poop.x, poop.y, poopSize, poopSize);
-      }
-    }
-
-    function updatePoop() {
-      for (const poop of poopArray) {
-        poop.y += 5;
-        if (
-          poop.y + poopSize > player.y &&
-          poop.x + poopSize > player.x &&
-          poop.x < player.x + player.width
-        ) {
-          gameOver = true;
-          gameMusic.pause();  // 음악을 멈춤
+        function playRandomJumpSound() {
+            (Math.random() < 0.5 ? rand1Audio : rand2Audio).play();
         }
-      }
-      if (poopArray.length && poopArray[0].y > canvas.height) {
-        poopArray.shift();
-        score += 10;
-        scoreDisplay.innerText = score;
-      }
-    }
 
-    function movePlayer(event) {
-      if (event.key === "ArrowLeft" && player.x > 0) {
-        player.x -= player.speed;
-      } else if (
-        event.key === "ArrowRight" &&
-        player.x < canvas.width - player.width
-      ) {
-        player.x += player.speed;
-      }
-    }
+        function playRandomHitSound() {
+            (Math.random() < 0.5 ? aaAudio : bbAudio).play();
+        }
 
-    // 드래그 시작
-    function startDrag(event) {
-      const x = event.touches ? event.touches[0].clientX : event.clientX; // 터치와 마우스 구분
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = x - rect.left;
-      const mouseY = (event.touches ? event.touches[0].clientY : event.clientY) - rect.top;
+        function jump() {
+            if (player.jumpCount < 2) {
+                player.vy = -12;
+                player.jumpCount++;
+                playRandomJumpSound();
+            }
+        }
 
-      // 플레이어 클릭 여부 확인
-      if (
-        mouseX >= player.x &&
-        mouseX <= player.x + player.width &&
-        mouseY >= player.y &&
-        mouseY <= player.y + player.height
-      ) {
-        player.isDragging = true;
-      }
-    }
+        // 클릭 이벤트를 설정
+        document.addEventListener("mousedown", function(event) {
+            if (event.button === 0 || event.button === 2) { // 좌클릭(0) 또는 우클릭(2) 
+                jump();
+            }
+        });
 
-    // 드래그 중
-    function dragPlayer(event) {
-      if (player.isDragging) {
-        const x = event.touches ? event.touches[0].clientX : event.clientX; // 터치와 마우스 구분
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = x - rect.left;
+        function spawnObstacle() {
+            const numObstacles = 1;
+            const playerGroundY = 440; // 플레이어가 화면 하단에 배치되어 있기 때문에 이 값을 440으로 설정
+            const maxJumpHeight = 160;
+            const obstacleHeight = Math.random() * (playerGroundY - maxJumpHeight) + maxJumpHeight;
+            const obstacleImage = Math.random() < 0.5 ? "poop1.jpg" : "poop.jpg";
+            obstacles.push({ x: canvas.width, y: obstacleHeight, width: 30, height: 30, image: obstacleImage });
+        }
 
-        // 마우스 X 좌표에 따라 플레이어 위치 이동
-        player.x = mouseX - player.width / 2;
+        function updateTimer() {
+            if (isGameOver) return;
+            timer.seconds++;
+            if (timer.seconds === 60) {
+                timer.minutes++;
+                timer.seconds = 0;
+            }
+            if (timer.seconds % 30 === 0 && lives < 4) {
+                lives++;
+            }
+            document.getElementById("timer").textContent = `시간: ${String(timer.minutes).padStart(2, '0')}:${String(timer.seconds).padStart(2, '0')}`;
+        }
 
-        // 경계 체크
-        if (player.x < 0) player.x = 0;
-        if (player.x > canvas.width - player.width)
-          player.x = canvas.width - player.width;
-      }
-    }
+        function updateUI() {
+            document.getElementById("score").textContent = `Score: ${score}`;
+            document.getElementById("high-score").textContent = `High Score: ${highScore}`;
+            document.getElementById("lives").textContent = `목숨: ${lives}`;
+        }
 
-    // 드래그 종료
-    function endDrag() {
-      player.isDragging = false;
-    }
+        function endGame() {
+            isGameOver = true;
+            gameOverScreen.style.display = "block";
+            if (score > highScore) {
+                highScore = score;
+            }
+            clearInterval(timerInterval);
+            clearInterval(obstacleSpawnInterval);
+        }
 
-    function showGameOver() {
-      ctx.fillStyle = "red";
-      ctx.font = "30px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText("찬일팸의 입단!", canvas.width / 2, canvas.height / 2 - 20);
-      if (score > highScore) {
-        highScore = score;
-        highScoreDisplay.innerText = highScore;
-      }
-      restartButton.style.display = "block";
-    }
+        function restartGame() {
+            isGameOver = false;
+            player.y = 440; // 플레이어 위치 초기화
+            player.vy = 0;
+            player.jumpCount = 0;
+            obstacles = [];
+            score = 0;
+            lives = 4;
+            timer = { minutes: 0, seconds: 0 };
+            gameOverScreen.style.display = "none";
+            gameLoop();
+            timerInterval = setInterval(updateTimer, 1000);
+            obstacleSpawnInterval = setInterval(spawnObstacle, 600);
+        }
 
-    function resetGame() {
-      score = 0;
-      poopArray.length = 0;
-      gameOver = false;
-      restartButton.style.display = "none";
-      scoreDisplay.innerText = score;
-      gameMusic.play();  // 게임이 재시작될 때 음악을 틀기
-      loop();
-    }
+        let timerInterval;
 
-    function loop() {
-      if (gameOver) {
-        showGameOver();
-        return;
-      }
+        function gameLoop() {
+            if (isGameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            player.vy += gravity;
+            player.y += player.vy;
+            if (player.y >= 440) { // 플레이어가 화면 하단에 고정되어야 함
+                player.y = 440;
+                player.jumpCount = 0;
+            }
+            const playerImg = new Image();
+            playerImg.src = player.image;
+            ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
 
-      if (gameMusic.paused) {
-        gameMusic.play();  // 게임 중일 때만 음악 실행
-      }
+            obstacles.forEach((obstacle, index) => {
+                obstacle.x -= 3;
+                const img = new Image();
+                img.src = obstacle.image;
+                ctx.drawImage(img, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawPlayer();
-      drawPoop();
-      updatePoop();
-      requestAnimationFrame(loop);
-    }
+                if (obstacle.x < player.x + player.width && obstacle.x + obstacle.width > player.x && obstacle.y < player.y + player.height && obstacle.y + obstacle.height > player.y) {
+                    playRandomHitSound();
+                    lives--;
+                    if (lives <= 0) {
+                        endGame();
+                    }
+                    obstacles.splice(index, 1);
+                }
 
-    document.addEventListener("keydown", movePlayer);
-    canvas.addEventListener("mousedown", startDrag);
-    canvas.addEventListener("mousemove", dragPlayer);
-    canvas.addEventListener("mouseup", endDrag);
-    canvas.addEventListener("mouseleave", endDrag);
+                if (obstacle.x + obstacle.width <= 0) {
+                    obstacles.splice(index, 1);
+                    score++;
+                }
+            });
 
-    // 터치 이벤트 추가
-    canvas.addEventListener("touchstart", startDrag);
-    canvas.addEventListener("touchmove", dragPlayer);
-    canvas.addEventListener("touchend", endDrag);
+            updateUI();
+            requestAnimationFrame(gameLoop);
+        }
 
-    restartButton.addEventListener("click", resetGame);
-    setInterval(createPoop, 1000);
-    loop();
-  </script>
+        window.onload = function() {
+            gameLoop();
+            timerInterval = setInterval(updateTimer, 1000);
+            obstacleSpawnInterval = setInterval(spawnObstacle, 600);
+        };
+    </script>
 </body>
 </html>
